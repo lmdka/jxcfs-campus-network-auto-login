@@ -6,6 +6,7 @@ import ttkbootstrap as ttk
 from configparser import ConfigParser
 from threading import Thread
 
+# 登录的默认信息
 login_config = {
     'callback': 'dr1003',
     'login_method': '1',
@@ -26,11 +27,12 @@ login_config = {
 
 class App:
     def __init__(self):
+        # 基础配置
         self.config = {
             'title': '江西外语外贸职业学院校园网自动登录器',
             'icon': 'logo.ico',
-            'version': 'v1.0.0',
-            'author': '小邝同学',
+            'version': 'v1.0.1',
+            'author': '小邝同学（雷姆的可爱）',
             'email': '2929957153@qq.com',
             'tips': '仅用于学习和测试'
         }
@@ -59,11 +61,16 @@ class App:
         # 设置窗口显示位置
         self.app.geometry("%dx%d+%d+%d" % (self.app_width, self.app_height, self.window_x, self.window_y))
 
+        # 动态账号对象
         self.user_account = ttk.StringVar()
+        # 动态密码对象
         self.user_password = ttk.StringVar()
+        # 是否保存账号密码
         self.is_save = ttk.IntVar()
+        # 是否有开启自动登录
         self.auto_login = ttk.IntVar()
-        self.log_ingo = None
+        # 日志
+        self.logs = None
 
     def set_content(self):
         l1 = ttk.Label(master=self.app, text='账号')
@@ -80,15 +87,15 @@ class App:
         c2.grid(row=1, column=3, padx=10)
         b1 = ttk.Button(master=self.app, text='登录', width=10, command=self.click_login)
         b1.grid(row=0, rowspan=2, column=4, padx=10)
-        self.log_ingo = ttk.Text(master=self.app, width=50, height=10, exportselection=False, undo=False, wrap='char',
-                                 state=ttk.DISABLED)
-        self.log_ingo.grid(row=2, column=0, columnspan=5, pady=5, padx=5)
+        self.logs = ttk.Text(master=self.app, width=50, height=10, exportselection=False, undo=False, wrap='char',
+                             state=ttk.DISABLED)
+        self.logs.grid(row=2, column=0, columnspan=5, pady=5, padx=5)
 
     def log(self, text):
-        self.log_ingo['state'] = ttk.NORMAL
+        self.logs['state'] = ttk.NORMAL
         datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-        self.log_ingo.insert('1.0', f'[{datetime}] - {text}')
-        self.log_ingo['state'] = ttk.DISABLED
+        self.logs.insert('1.0', f'[{datetime}] - {text}')
+        self.logs['state'] = ttk.DISABLED
 
     def click_login(self):
         Thread(target=self.click_login_default).start()
@@ -100,33 +107,26 @@ class App:
         save_config('config', 'is_save', self.is_save.get())
         save_config('params', 'user_account', self.user_account.get())
         if int(self.is_save.get()) == 1:
+            save_config('params', 'user_account', self.user_account.get())
             save_config('params', 'user_password', self.user_password.get())
-        time.sleep(0.5)
         self.log('保存配置完成\n')
         login_config['user_account'] = config.get('user_account')
         login_config['user_password'] = config.get('user_password')
         login_config['wlan_user_ip'] = refresh(socket.gethostbyname(socket.gethostname()))
-        time.sleep(0.5)
         self.log('正在登录中...\n')
         response = login(config.get('login_url'), login_config)
-        time.sleep(0.5)
         self.log(f'{response}\n')
 
     def on_auto_login(self):
         global login_config
         config = load_config()
-        time.sleep(0.5)
         self.log(f'正在加载配置...\n')
-        time.sleep(0.5)
         login_config['user_account'] = config.get('user_account')
         login_config['user_password'] = config.get('user_password')
         login_config['wlan_user_ip'] = refresh(socket.gethostbyname(socket.gethostname()))
         self.log(f'准备开始登录...\n')
-        time.sleep(0.5)
         response = login(config.get('login_url'), login_config)
-        time.sleep(0.5)
         self.log(f'正在登录中...\n')
-        time.sleep(1)
         self.log(f'{response}\n')
 
     def info(self):
@@ -136,7 +136,7 @@ class App:
     def run(self):
         self.info()
         self.log(f'**********开启日志记录**********\n')
-        if int(load_config().get('auto_login')) == 1:
+        if int(self.auto_login.get()) == 1:
             self.log(f'已设置自动登录\n')
             Thread(target=self.on_auto_login).start()
         else:
@@ -174,6 +174,7 @@ def refresh(ip):
         return ip
 
 
+# 加载配置文件
 def load_config():
     c = ConfigParser()
     c.read('setting.ini', encoding='utf-8')
@@ -192,6 +193,7 @@ def load_config():
     return setting
 
 
+# 程序启动入口
 def main():
     config = load_config()
     app = App()
